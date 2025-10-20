@@ -1,10 +1,17 @@
+console.log('🚀 Starting insights-service...');
 require('dotenv').config();
+console.log('✅ Environment loaded');
+
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const { v4: uuidv4 } = require('uuid');
-const { sequelize } = require('../../models');
+console.log('✅ Dependencies loaded');
+
+console.log('📦 Loading models...');
+const { sequelize } = require('../models');
+console.log('✅ Models loaded');
 
 const app = express();
 const PORT = process.env.PORT || 4006;

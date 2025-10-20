@@ -4,7 +4,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const { v4: uuidv4 } = require('uuid');
-const { sequelize } = require('../models');
+const { sequelize } = require('../../models');
 
 const app = express();
 const PORT = process.env.PORT || 4006;
@@ -73,4 +73,8 @@ app.use((err, _req, res, _next) => {
 });
 
 // Bind 0.0.0.0 para Railway
-app.listen(PORT, '0.0.0.0', () => console.log(`insights-service on :${PORT}`));
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 insights-service running on port ${PORT}`);
+  console.log(`📍 Health check: http://localhost:${PORT}/health`);
+  console.log(`📊 Metrics: http://localhost:${PORT}/api/v1/metrics/summary`);
+});

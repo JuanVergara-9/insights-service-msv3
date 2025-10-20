@@ -1,5 +1,15 @@
 console.log('🚀 Starting insights-service...');
 require('dotenv').config();
+
+// Verificar variables críticas
+const requiredEnvVars = ['DATABASE_URL'];
+const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
+
+if (missingVars.length > 0) {
+  console.error('❌ Missing required environment variables:', missingVars);
+  process.exit(1);
+}
+
 console.log('✅ Environment loaded');
 
 const express = require('express');
@@ -13,8 +23,22 @@ console.log('📦 Loading models...');
 const { sequelize } = require('../models');
 console.log('✅ Models loaded');
 
+// Verificar conexión a la base de datos
+sequelize.authenticate()
+  .then(() => {
+    console.log('✅ Database connection established successfully');
+  })
+  .catch(err => {
+    console.error('❌ Unable to connect to the database:', err.message);
+    process.exit(1);
+  });
+
 const app = express();
 const PORT = process.env.PORT || 4006;
+
+console.log(`🔧 Environment: ${process.env.NODE_ENV}`);
+console.log(`🔧 Port: ${PORT}`);
+console.log(`🔧 Database URL: ${process.env.DATABASE_URL ? 'SET' : 'NOT SET'}`);
 
 // Confiar en proxy (Railway)
 app.set('trust proxy', 1);
@@ -79,9 +103,25 @@ app.use((err, _req, res, _next) => {
   });
 });
 
-// Bind 0.0.0.0 para Railway
-app.listen(PORT, '0.0.0.0', () => {
+// Bind para Railway
+const server = app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 insights-service running on port ${PORT}`);
   console.log(`📍 Health check: http://localhost:${PORT}/health`);
   console.log(`📊 Metrics: http://localhost:${PORT}/api/v1/metrics/summary`);
+  console.log(`🌐 Railway URL: https://insights-service-msv3-production.up.railway.app`);
+});
+
+// Manejo de errores del servidor
+server.on('error', (err) => {
+  console.error('❌ Server error:', err);
+  process.exit(1);
+});
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('🛑 SIGTERM received, shutting down gracefully');
+  server.close(() => {
+    console.log('✅ Process terminated');
+    process.exit(0);
+  });
 });

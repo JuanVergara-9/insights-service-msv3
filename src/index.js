@@ -79,6 +79,7 @@ app.use((req, res, next) => {
 });
 
 // Health / Readiness (incluye alias)
+app.get('/', (_req, res) => res.json({ ok: true, service: 'insights-service' }));
 app.get('/health', (_req, res) => res.json({ ok: true, service: 'insights-service' }));
 app.get('/ready',  async (_req, res) => {
   try { await sequelize.authenticate(); return res.json({ ok: true }); }

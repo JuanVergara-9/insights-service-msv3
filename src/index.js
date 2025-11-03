@@ -104,8 +104,8 @@ app.use((err, _req, res, _next) => {
   });
 });
 
-// Bind para Railway
-const server = app.listen(PORT, '0.0.0.0', () => {
+// Bind para Railway (sin host explícito para soportar IPv4/IPv6)
+const server = app.listen(PORT, () => {
   console.log(`🚀 insights-service running on port ${PORT}`);
   console.log(`📍 Health check: http://localhost:${PORT}/health`);
   console.log(`📊 Metrics: http://localhost:${PORT}/api/v1/metrics/summary`);

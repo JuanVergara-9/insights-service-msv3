@@ -16,11 +16,11 @@ async function summary(params) {
 
   const [rows] = await sequelize.query(`
     SELECT
-      COUNT(*) FILTER (WHERE type = 'search') as searches,
-      COUNT(*) FILTER (WHERE type = 'view_provider') as provider_views,
-      COUNT(*) FILTER (WHERE type = 'contact_intent') as contacts,
+      COUNT(*) FILTER (WHERE type = 'user_search') as searches,
+      COUNT(*) FILTER (WHERE type = 'provider_view') as provider_views,
+      COUNT(*) FILTER (WHERE type = 'contact_click') as contacts,
       COUNT(*) FILTER (WHERE type = 'review_submit') as reviews,
-      COUNT(DISTINCT user_id) FILTER (WHERE type IN ('login', 'app_open', 'view_provider', 'search')) as dau
+      COUNT(DISTINCT user_id) FILTER (WHERE type IN ('user_search', 'provider_view', 'contact_click', 'review_submit')) as dau
     FROM events
     WHERE ts BETWEEN :from AND :to
       AND (:city IS NULL OR city_slug = :city)
@@ -69,9 +69,9 @@ async function funnel(params) {
   // MVP: Real-time from events
   const [rows] = await sequelize.query(`
     SELECT
-      COUNT(*) FILTER (WHERE type = 'search') as searches,
-      COUNT(*) FILTER (WHERE type = 'view_provider') as views,
-      COUNT(*) FILTER (WHERE type = 'contact_intent') as contacts,
+      COUNT(*) FILTER (WHERE type = 'user_search') as searches,
+      COUNT(*) FILTER (WHERE type = 'provider_view') as views,
+      COUNT(*) FILTER (WHERE type = 'contact_click') as contacts,
       COUNT(*) FILTER (WHERE type = 'review_submit') as reviews
     FROM events
     WHERE ts BETWEEN :from AND :to
@@ -104,7 +104,7 @@ async function categoriesRanking(params) {
   // MVP: Real-time from events
   const [rows] = await sequelize.query(`
     SELECT COALESCE(category_slug,'all') AS category,
-           COUNT(*) FILTER (WHERE type = 'contact_intent')::int AS contacts,
+           COUNT(*) FILTER (WHERE type = 'contact_click')::int AS contacts,
            COUNT(*) FILTER (WHERE type = 'review_submit')::int  AS reviews
     FROM events
     WHERE ts BETWEEN :from AND :to
@@ -121,17 +121,17 @@ async function contactsBreakdown(params) {
   const city = params.city?.toLowerCase() || null;
   const cat = params.category?.toLowerCase() || null;
 
-  // Consultar eventos de tipo contact_intent para el desglose
+  // Consultar eventos de tipo contact_click para el desglose
   const [rows] = await sequelize.query(`
     SELECT
-      extra->>'method' as method,
+      COALESCE(channel, 'unknown') as channel,
       COUNT(*)::int as count
     FROM events
-    WHERE type = 'contact_intent'
+    WHERE type = 'contact_click'
       AND ts BETWEEN :from AND :to
       AND (:city IS NULL OR city_slug = :city)
       AND (:cat IS NULL OR category_slug = :cat)
-    GROUP BY extra->>'method'
+    GROUP BY channel
   `, { replacements: { from, to, city, cat } });
 
   const breakdown = {
@@ -143,9 +143,9 @@ async function contactsBreakdown(params) {
   };
 
   rows.forEach(row => {
-    const method = row.method || 'unknown';
-    if (breakdown.hasOwnProperty(method)) {
-      breakdown[method] += row.count;
+    const channel = row.channel || 'unknown';
+    if (breakdown.hasOwnProperty(channel)) {
+      breakdown[channel] += row.count;
     } else {
       breakdown.unknown += row.count;
     }

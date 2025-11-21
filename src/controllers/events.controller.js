@@ -13,7 +13,7 @@ const eventSchema = z.object({
   category: z.string().optional(),
   providerId: z.number().int().optional(),
   query: z.string().max(160).optional(),
-  channel: z.enum(['whatsapp','form']).optional(),
+  channel: z.string().min(1).max(32).optional(),
   rating: z.number().int().min(1).max(5).optional(),
   hasPhotos: z.boolean().optional(),
   device: z.string().max(160).optional(),

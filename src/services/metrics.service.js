@@ -20,7 +20,8 @@ async function summary(params) {
       COUNT(*) FILTER (WHERE type = 'provider_view') as provider_views,
       COUNT(*) FILTER (WHERE type = 'contact_click') as contacts,
       COUNT(*) FILTER (WHERE type = 'review_submit') as reviews,
-      COUNT(DISTINCT user_id) FILTER (WHERE type IN ('user_search', 'provider_view', 'contact_click', 'review_submit')) as dau
+      COUNT(DISTINCT user_id) FILTER (WHERE user_id IS NOT NULL AND type IN ('user_search', 'provider_view', 'contact_click', 'review_submit')) as dau,
+      COUNT(DISTINCT anonymous_id) FILTER (WHERE user_id IS NULL AND type IN ('user_search', 'provider_view', 'contact_click')) as anonymous_users
     FROM events
     WHERE ts BETWEEN :from AND :to
       AND (:city IS NULL OR city_slug = :city)
@@ -29,9 +30,26 @@ async function summary(params) {
 
   const row = rows[0] || {};
 
-  // WAU simple: actores promedio * 7 (aprox) — para MVP.
+  // DAU: solo usuarios autenticados (excluye anónimos)
   const dau = Number(row.dau || 0);
-  const wau = dau * 7;
+  
+  // WAU: usuarios únicos en los últimos 7 días (solo autenticados)
+  const sevenDaysAgo = new Date(to);
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+  const [wauRows] = await sequelize.query(`
+    SELECT COUNT(DISTINCT user_id) as wau
+    FROM events
+    WHERE user_id IS NOT NULL
+      AND ts >= :sevenDaysAgo
+      AND ts <= :to
+      AND type IN ('user_search', 'provider_view', 'contact_click', 'review_submit')
+      AND (:city IS NULL OR city_slug = :city)
+      AND (:cat IS NULL OR category_slug = :cat)
+  `, { replacements: { sevenDaysAgo, to, city, cat } });
+  const wau = Number(wauRows[0]?.wau || 0);
+  
+  // Usuarios anónimos en el período
+  const anonymousUsers = Number(row.anonymous_users || 0);
 
   // Rating 90d
   const [r90] = await sequelize.query(`
@@ -52,6 +70,7 @@ async function summary(params) {
   return {
     dau,
     wau,
+    anonymousUsers,
     searches: Number(row.searches || 0),
     providerViews: Number(row.provider_views || 0),
     contacts: Number(row.contacts || 0),

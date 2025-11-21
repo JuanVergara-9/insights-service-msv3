@@ -54,8 +54,8 @@ app.use(cors({
     return cb(null, origins.length === 0 || origins.includes(origin));
   },
   credentials: true,
-  methods: ['GET','POST','PUT','DELETE','OPTIONS'],
-  allowedHeaders: ['Content-Type','Authorization','x-request-id']
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-request-id']
 }));
 
 app.use(helmet());
@@ -81,12 +81,12 @@ app.use((req, res, next) => {
 // Health / Readiness (incluye alias)
 app.get('/', (_req, res) => res.json({ ok: true, service: 'insights-service' }));
 app.get('/health', (_req, res) => res.json({ ok: true, service: 'insights-service' }));
-app.get('/ready',  async (_req, res) => {
+app.get('/ready', async (_req, res) => {
   try { await sequelize.authenticate(); return res.json({ ok: true }); }
   catch { return res.status(503).json({ ok: false }); }
 });
 app.get('/healthz', (_req, res) => res.json({ ok: true, service: 'insights-service' }));
-app.get('/readyz',  async (_req, res) => {
+app.get('/readyz', async (_req, res) => {
   try { await sequelize.authenticate(); return res.json({ ok: true }); }
   catch { return res.status(503).json({ ok: false }); }
 });
@@ -104,11 +104,11 @@ app.use((err, _req, res, _next) => {
   });
 });
 
-// Bind para Railway (sin host explícito para soportar IPv4/IPv6)
-const server = app.listen(PORT, () => {
+// Bind para Railway - DEBE escuchar en 0.0.0.0 para que Railway pueda rutear el tráfico
+const server = app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 insights-service running on port ${PORT}`);
-  console.log(`📍 Health check: http://localhost:${PORT}/health`);
-  console.log(`📊 Metrics: http://localhost:${PORT}/api/v1/metrics/summary`);
+  console.log(`📍 Health check: http://0.0.0.0:${PORT}/health`);
+  console.log(`📊 Metrics: http://0.0.0.0:${PORT}/api/v1/metrics/summary`);
   console.log(`🌐 Railway URL: https://insights-service-msv3-production.up.railway.app`);
 });
 

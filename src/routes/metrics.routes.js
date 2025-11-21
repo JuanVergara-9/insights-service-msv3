@@ -5,5 +5,6 @@ const ctrl = require('../controllers/metrics.controller');
 router.get('/metrics/summary', ctrl.summary);
 router.get('/metrics/funnel', ctrl.funnel);
 router.get('/metrics/categories', ctrl.categories);
+router.get('/metrics/contacts-breakdown', ctrl.contactsBreakdown);
 
 module.exports = router;
